@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block body %}
+<section class="signin">
+  <h1>Your lab results, by sample</h1>
+  <p>Pick a demo account to see its specimens and results. No password in this mock.</p>
+  <form method="post">
+    <label for="client_id">Account</label>
+    <select id="client_id" name="client_id">
+      {% for c in clients %}<option value="{{ c.client_id }}">{{ c.name }} ({{ c.account_no }})</option>{% endfor %}
+    </select>
+    <button type="submit">Open results</button>
+  </form>
+</section>
+{% endblock %}

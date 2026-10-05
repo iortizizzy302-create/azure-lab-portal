@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Samples{% endblock %}
+{% block body %}
+<h1>Samples</h1>
+<p class="lede">{{ samples|length }} specimens received in the last 40 days.</p>
+<div class="scroll">
+<table class="ledger">
+  <thead><tr><th>Accession</th><th>Subject</th><th>Collected</th><th>Status</th><th class="num">Out of range</th></tr></thead>
+  <tbody>
+  {% for s in samples %}
+    <tr>
+      <td><a href="{{ url_for('sample_detail', sample_id=s.sample_id) }}">{{ s.accession_no }}</a></td>
+      <td>{{ s.subject_name }}</td>
+      <td>{{ s.collected_on }}</td>
+      <td><span class="status {{ 'pending' if s.status != 'Complete' }}">{{ s.status }}</span></td>
+      <td class="num">{% if s.status == 'Complete' %}{{ s.flagged }}{% else %}–{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

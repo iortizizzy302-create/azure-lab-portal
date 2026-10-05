@@ -1,0 +1,4 @@
+flask==3.1.*
+gunicorn==23.*
+pyodbc==5.*
+azure-monitor-opentelemetry==1.*

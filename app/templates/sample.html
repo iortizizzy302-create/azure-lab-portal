@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ sample.accession_no }}{% endblock %}
+{% block body %}
+<a class="back" href="{{ url_for('portal') }}">Back to samples</a>
+<section class="label">
+  <div class="accession">{{ sample.accession_no }}</div>
+  <dl>
+    <div><dt>Subject</dt><dd>{{ sample.subject_name }}</dd></div>
+    <div><dt>Specimen</dt><dd>{{ sample.sample_type }}</dd></div>
+    <div><dt>Collected</dt><dd>{{ sample.collected_on }}</dd></div>
+    <div><dt>Received</dt><dd>{{ sample.received_on }}</dd></div>
+    <div><dt>Status</dt><dd>{{ sample.status }}</dd></div>
+  </dl>
+</section>
+
+{% if not results %}
+  <p class="empty">Testing is still in progress for this sample. Results post here as soon as they're verified.</p>
+{% else %}
+  <p class="lede">{{ summary.total }} tests: {{ summary.normal }} within range, {{ summary.high }} high, {{ summary.low }} low.</p>
+  <div class="scroll">
+  <table class="ledger results">
+    <thead><tr><th>Test</th><th class="num">Result</th><th>Units</th><th>Reference</th><th class="range-col">Where it falls</th></tr></thead>
+    <tbody>
+    {% for r in results %}
+      <tr class="flag-{{ r.flag }}">
+        <td>{{ r.test_name }} <span class="code">{{ r.test_code }}</span></td>
+        <td class="num value">{{ '%.2f'|format(r.result_value) }}{% if r.flag != 'N' %} <span class="flag">{{ r.flag }}</span>{% endif %}</td>
+        <td>{{ r.units }}</td>
+        <td>{{ r.ref_low }} to {{ r.ref_high }}</td>
+        <td class="range-col">
+          <div class="track" role="img" aria-label="{{ r.test_name }} {{ 'below' if r.flag=='L' else 'above' if r.flag=='H' else 'within' }} reference range">
+            <div class="band"></div>
+            <div class="mark" style="left: {{ (r.marker + 50) / 2 }}%"></div>
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="engine">Range checks run by {{ engine }}.</p>
+{% endif %}
+{% endblock %}

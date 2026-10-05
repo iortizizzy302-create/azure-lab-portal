@@ -1,0 +1,89 @@
+// Run these in Azure portal > Log Analytics workspace (law-...) > Logs.
+// New data shows up after a few minutes of ingestion delay.
+// In the Application Insights "Logs" blade the same tables are named
+// requests / traces / exceptions and use customDimensions instead of Properties.
+
+// 1. Everything the app logged in the last hour
+AppTraces
+| where TimeGenerated > ago(1h)
+| project TimeGenerated, SeverityLevel, Message, Properties
+| order by TimeGenerated desc
+
+// 2. Requests per page with failure count
+AppRequests
+| where TimeGenerated > ago(24h)
+| summarize total = count(), failed = countif(Success == false) by Name
+| order by failed desc
+
+// 3. Slowest pages (p95)
+AppRequests
+| summarize avg_ms = avg(DurationMs), p95_ms = percentile(DurationMs, 95), hits = count() by Name
+| order by p95_ms desc
+
+// 4. Exceptions, with the request that caused them (hit /demo/fail to create some)
+AppExceptions
+| join kind=inner (AppRequests | project OperationId, Name, Url) on OperationId
+| project TimeGenerated, Name, Url, ExceptionType, OuterMessage
+| order by TimeGenerated desc
+
+// 5. How long the COBOL evaluator takes
+AppTraces
+| where Message == "cobol_evaluated"
+| extend ms = todouble(Properties.duration_ms)
+| summarize runs = count(), avg_ms = avg(ms), p95_ms = percentile(ms, 95) by bin(TimeGenerated, 15m)
+| render timechart
+
+// 6. Security: someone tried to open another client's sample
+AppTraces
+| where Message == "cross_client_access_denied"
+| extend client_id = tostring(Properties.client_id), owner = tostring(Properties.owner_client_id),
+         ip = tostring(Properties.client_ip), sample_id = tostring(Properties.sample_id)
+| summarize attempts = count(), samples = make_set(sample_id) by client_id, ip
+
+// 7. Did the container ever run without the COBOL binary?
+AppTraces
+| where Message == "cobol_binary_missing"
+| summarize count() by bin(TimeGenerated, 1h)
+
+// 8. Database connection retries (serverless SQL waking up from pause)
+AppTraces
+| where Message == "sql_connect_retry"
+| project TimeGenerated, attempt = toint(Properties.attempt), error = tostring(Properties.error)
+
+// 9. Raw HTTP log from App Service itself (not the app): 4xx/5xx
+AppServiceHTTPLogs
+| where ScStatus >= 400
+| project TimeGenerated, CsMethod, CsUriStem, ScStatus, TimeTaken, CIp
+| order by TimeGenerated desc
+
+// 10. Container stdout/stderr (gunicorn startup, crashes, print output)
+AppServiceConsoleLogs
+| project TimeGenerated, Level, ResultDescription
+| order by TimeGenerated desc
+| take 100
+
+// 11. Container start/stop events from the platform
+AppServicePlatformLogs
+| project TimeGenerated, Level, Message
+| order by TimeGenerated desc
+
+// 12. Most viewed samples and who flagged results most often
+AppTraces
+| where Message == "results_viewed"
+| extend sample_id = tostring(Properties.sample_id), flagged = toint(Properties.flagged)
+| summarize views = count(), flagged = max(flagged) by sample_id
+| top 10 by views
+
+// ---- If you deployed to Azure Container Apps instead of App Service ----
+// (queries 9-11 above are App Service only; use these instead)
+
+// 13. Container stdout/stderr (gunicorn, app log lines)
+ContainerAppConsoleLogs_CL
+| project TimeGenerated, ContainerAppName_s, Log_s
+| order by TimeGenerated desc
+| take 100
+
+// 14. Platform events: image pulls, replica start/stop, scale to zero
+ContainerAppSystemLogs_CL
+| project TimeGenerated, Reason_s, Log_s
+| order by TimeGenerated desc

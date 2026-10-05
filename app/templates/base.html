@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Specimen portal{% endblock %} | Alamo Valley Labs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="{{ url_for('portal') }}">Alamo Valley Labs</a>
+    {% if client %}
+      <span class="who">{{ client.name }} <span class="acct">{{ client.account_no }}</span></span>
+      <a class="out" href="{{ url_for('sign_out') }}">Sign out</a>
+    {% endif %}
+  </header>
+  <main>{% block body %}{% endblock %}</main>
+  <footer>Demo portal. Every name, account and result here is fabricated.</footer>
+</body>
+</html>
